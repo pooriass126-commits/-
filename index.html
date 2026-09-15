@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>قیمت لحظه‌ای طلا و ارز</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0b0f19">
+<style>
+  :root{
+    --bg: #0b0f19;
+    --bg-soft: #121729;
+    --card: #161c2e;
+    --card-border: #232a42;
+    --text: #eef1f8;
+    --muted: #8b93a7;
+    --green: #22c55e;
+    --red: #ef4444;
+    --gold: #f0b429;
+    --accent: #6c8bff;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family: 'Vazirmatn', 'Tahoma', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, #1a2140 0%, var(--bg) 60%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 18px 14px 40px;
+  }
+  header{
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    margin-bottom: 18px; text-align:center;
+  }
+  header h1{
+    font-size: 1.25rem; font-weight: 700;
+    background: linear-gradient(90deg, var(--gold), #ffe28a);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .status{
+    display:flex; align-items:center; gap:8px;
+    font-size: 0.78rem; color: var(--muted);
+  }
+  .dot{
+    width:8px; height:8px; border-radius:50%;
+    background: var(--green);
+    box-shadow: 0 0 0 0 rgba(34,197,94,.6);
+    animation: pulse 1.8s infinite;
+  }
+  .dot.off{ background: var(--red); animation:none; }
+  @keyframes pulse{
+    0%{ box-shadow: 0 0 0 0 rgba(34,197,94,.55);}
+    70%{ box-shadow: 0 0 0 8px rgba(34,197,94,0);}
+    100%{ box-shadow: 0 0 0 0 rgba(34,197,94,0);}
+  }
+  .refresh-btn{
+    background: var(--bg-soft); border:1px solid var(--card-border);
+    color: var(--text); border-radius: 10px; padding:6px 12px;
+    font-size: 0.75rem; cursor:pointer; display:flex; align-items:center; gap:6px;
+  }
+  .refresh-btn:active{ transform: scale(0.96); }
+  .refresh-btn svg{ width:14px; height:14px; }
+  .spin{ animation: spin 0.8s linear infinite; }
+  @keyframes spin{ to{ transform: rotate(360deg);} }
+
+  .section-title{
+    font-size: 0.85rem; color: var(--muted); margin: 20px 4px 10px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .section-title::after{
+    content:""; flex:1; height:1px; background: var(--card-border);
+  }
+
+  .grid{
+    display:grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    max-width: 640px; margin: 0 auto;
+  }
+  .card{
+    background: linear-gradient(145deg, var(--card), var(--bg-soft));
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 14px;
+    display:flex; flex-direction:column; gap:8px;
+    position: relative;
+    overflow:hidden;
+    transition: transform .15s ease;
+  }
+  .card.wide{ grid-column: 1 / -1; }
+  .card::before{
+    content:""; position:absolute; inset:0;
+    background: radial-gradient(120px 80px at 100% 0%, rgba(108,139,255,.12), transparent 70%);
+    pointer-events:none;
+  }
+  .card-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .card-label{ font-size: 0.78rem; color: var(--muted); }
+  .card-icon{ font-size: 1.15rem; line-height:1; }
+  .price{
+    font-size: 1.28rem; font-weight: 700; letter-spacing: -0.5px;
+    direction: ltr; text-align: right; font-variant-numeric: tabular-nums;
+  }
+  .card.wide .price{ font-size: 1.55rem; }
+  .unit{ font-size: 0.72rem; color: var(--muted); font-weight:400; margin-right:4px;}
+  .change{
+    display:inline-flex; align-items:center; gap:4px;
+    font-size: 0.74rem; font-weight:600; border-radius: 8px;
+    padding: 2px 7px; width: fit-content;
+    direction: ltr;
+  }
+  .change.up{ color: var(--green); background: rgba(34,197,94,.12); }
+  .change.down{ color: var(--red); background: rgba(239,68,68,.12); }
+  .change.flat{ color: var(--muted); background: rgba(139,147,167,.12); }
+  .time{ font-size: 0.66rem; color: #616a80; }
+
+  .skeleton{
+    background: linear-gradient(90deg, var(--card) 25%, #1e2540 37%, var(--card) 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+    border-radius: 6px; height: 20px; width: 70%;
+  }
+  @keyframes shimmer{ 0%{background-position:100% 50%;} 100%{background-position:0 50%;} }
+
+  footer{
+    text-align:center; margin-top: 26px; color: var(--muted); font-size: 0.7rem;
+    line-height: 1.9;
+  }
+  .err-banner{
+    max-width:640px; margin: 0 auto 14px; background: rgba(239,68,68,.1);
+    border:1px solid rgba(239,68,68,.35); color:#ffb4b4;
+    padding: 10px 14px; border-radius: 12px; font-size: 0.78rem;
+    display:none; text-align:center;
+  }
+  .err-banner.show{ display:block; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>💰 قیمت لحظه‌ای طلا، سکه و ارز</h1>
+  <div class="status">
+    <span class="dot" id="statusDot"></span>
+    <span id="statusText">در حال اتصال…</span>
+    <button class="refresh-btn" id="refreshBtn" onclick="loadPrices(true)">
+      <svg id="refreshIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+      بروزرسانی
+    </button>
+  </div>
+</header>
+
+<div class="err-banner" id="errBanner">
+  اتصال به سرور برقرار نشد. احتمالاً موقتیه — دوباره تلاش می‌کنیم…
+</div>
+
+<div class="section-title">ارزهای اصلی</div>
+<div class="grid" id="gridCurrency"></div>
+
+<div class="section-title">طلا و سکه (تومان)</div>
+<div class="grid" id="gridGold"></div>
+
+<footer>
+  آخرین بروزرسانی: <span id="lastUpdate">—</span><br>
+  منبع داده عمومی بازار — هر ۲۰ ثانیه خودکار بروز می‌شود<br>
+  برای نصب روی صفحه اصلی: منوی مرورگر ← «افزودن به صفحه اصلی»
+</footer>
+
+<script>
+const CURRENCY_ITEMS = [
+  { key: 'price_dollar_rl', label: 'دلار آمریکا', icon: '💵', kind: 'currency' },
+  { key: 'price_eur',       label: 'یورو',         icon: '💶', kind: 'currency' },
+  { key: 'price_gbp',       label: 'پوند انگلیس',  icon: '💷', kind: 'currency' },
+  { key: 'price_try',       label: 'لیر ترکیه',    icon: '🇹🇷', kind: 'currency' },
+  { key: 'price_aed',       label: 'درهم امارات',  icon: '🇦🇪', kind: 'currency' },
+  { key: 'price_cny',       label: 'یوان چین',     icon: '🇨🇳', kind: 'currency' },
+];
+
+const GOLD_ITEMS = [
+  { key: 'geram18', label: 'طلای ۱۸ عیار (هر گرم)', icon: '🟡', kind: 'gold', wide:true },
+  { key: 'geram24', label: 'طلای ۲۴ عیار (هر گرم)', icon: '🟨', kind: 'gold' },
+  { key: 'mesghal',  label: 'مثقال طلا',            icon: '⚖️', kind: 'gold' },
+  { key: 'sekee',    label: 'سکه امامی',            icon: '🪙', kind: 'gold' },
+  { key: 'sekeb',    label: 'سکه بهار آزادی',       icon: '🪙', kind: 'gold' },
+  { key: 'nim',      label: 'نیم سکه',              icon: '🥇', kind: 'gold' },
+  { key: 'rob',      label: 'ربع سکه',              icon: '🥉', kind: 'gold' },
+  { key: 'ons',      label: 'انس جهانی طلا (دلار)', icon: '🌍', kind: 'ounce' },
+];
+
+const API_URL = 'https://call4.tgju.org/ajax.json';
+const REFRESH_MS = 20000;
+let countdownTimer = null;
+
+function toToman(rialStr){
+  const n = parseFloat(String(rialStr).replace(/,/g, ''));
+  if (isNaN(n)) return null;
+  return Math.round(n / 10);
+}
+
+function fmt(n){
+  return n.toLocaleString('en-US');
+}
+
+function renderSkeleton(container, items){
+  container.innerHTML = items.map(it => cardShell(it, `<div class="skeleton"></div>`, '')).join('');
+}
+
+function cardShell(it, priceHtml, changeHtml){
+  return `
+    <div class="card ${it.wide ? 'wide' : ''}">
+      <div class="card-top">
+        <span class="card-label">${it.label}</span>
+        <span class="card-icon">${it.icon}</span>
+      </div>
+      <div class="price">${priceHtml}</div>
+      ${changeHtml}
+    </div>`;
+}
+
+function changeBadge(dp, dt){
+  const val = parseFloat(dp) || 0;
+  if (!dt || val === 0) return `<span class="change flat">— بدون تغییر</span>`;
+  const isUp = dt === 'high';
+  const arrow = isUp ? '▲' : '▼';
+  const cls = isUp ? 'up' : 'down';
+  return `<span class="change ${cls}">${arrow} ${val}%</span>`;
+}
+
+function renderCard(it, data){
+  const item = data.current ? data.current[it.key] : null;
+  if (!item || item.p === undefined) {
+    return cardShell(it, `<span style="color:var(--muted); font-size:0.85rem;">در دسترس نیست</span>`, '');
+  }
+  let priceText, unitText;
+  if (it.kind === 'ounce') {
+    const n = parseFloat(String(item.p).replace(/,/g,''));
+    priceText = isNaN(n) ? '—' : fmt(n);
+    unitText = 'دلار';
+  } else {
+    const toman = toToman(item.p);
+    priceText = toman === null ? '—' : fmt(toman);
+    unitText = 'تومان';
+  }
+  const priceHtml = `${priceText}<span class="unit">${unitText}</span>`;
+  const changeHtml = `<div style="display:flex; justify-content:space-between; align-items:center;">
+      ${changeBadge(item.dp, item.dt)}
+      <span class="time">${item.t || ''}</span>
+    </div>`;
+  return cardShell(it, priceHtml, changeHtml);
+}
+
+function setStatus(ok, msg){
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  const err = document.getElementById('errBanner');
+  dot.classList.toggle('off', !ok);
+  text.textContent = msg;
+  err.classList.toggle('show', !ok);
+}
+
+async function loadPrices(manual){
+  const icon = document.getElementById('refreshIcon');
+  icon.classList.add('spin');
+  if (manual) setStatus(true, 'در حال بروزرسانی…');
+
+  try {
+    const res = await fetch(API_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error('bad status');
+    const data = await res.json();
+
+    document.getElementById('gridCurrency').innerHTML =
+      CURRENCY_ITEMS.map(it => renderCard(it, data)).join('');
+    document.getElementById('gridGold').innerHTML =
+      GOLD_ITEMS.map(it => renderCard(it, data)).join('');
+
+    const now = new Date();
+    document.getElementById('lastUpdate').textContent =
+      now.toLocaleTimeString('fa-IR');
+    setStatus(true, 'آنلاین — بروز');
+  } catch (e) {
+    setStatus(false, 'خطا در اتصال');
+  } finally {
+    icon.classList.remove('spin');
+  }
+}
+
+function init(){
+  renderSkeleton(document.getElementById('gridCurrency'), CURRENCY_ITEMS);
+  renderSkeleton(document.getElementById('gridGold'), GOLD_ITEMS);
+  loadPrices(false);
+  countdownTimer = setInterval(() => loadPrices(false), REFRESH_MS);
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') loadPrices(false);
+});
+
+init();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
